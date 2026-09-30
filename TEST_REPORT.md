@@ -1,24 +1,24 @@
-# Testbericht – v1.0.0
+# TEST_REPORT – Brettspielregal Pages v5.0.0
 
-Ausgeführt vor Paketierung:
+## Schwerpunkt v5
 
-- JavaScript-Syntaxcheck mit Node: erfolgreich
-- Manifest-JSON und PWA-Icon-Dateien: erfolgreich
-- Frontend-DOM-Referenzen gegen vorhandene IDs: erfolgreich
-- keine Inline-`onclick`-Handler: bestätigt
-- kein `location.reload()` im Service Worker: bestätigt
-- gemeinsamer Frontend-Code mit dem Docker-Frontend: bestätigt
-- Local-Provider-/IndexedDB-Code statisch geprüft
-- Backupformat/Provider-Verträge statisch gegen die Server-API abgeglichen
-- keine Python-, Docker-, SQLite- oder `.env`-Dateien im Pages-Paket: bestätigt
-- keine fest eingebauten Cloudflare/OpenAI-Secrets gefunden
-- ZIP-Integrität: erfolgreich
+V4 ist ein visuelles Release. IndexedDB-Schema, Server-Modus, Backup-Format und Provider-Architektur bleiben gegenüber v3 unverändert.
 
-Nicht vollständig ausführbar in der Erstellungsumgebung:
+Geprüft wurden:
 
-- physischer iPhone/Safari-PWA-Test
-- echter GitHub-Pages-Deployment-Run in einem Benutzer-Repository
-- echter Cloudflare-Access/CORS-End-to-End-Test
-- Server-Modus gegen einen real laufenden Docker-Container
+- JavaScript-Syntax mit `node --check`
+- gemeinsame Frontend-Codebasis mit Docker v5
+- Pages-Konfiguration Version `5.0.0`
+- Manifest-JSON und Theme-Farben
+- Service-Worker-Cache `brettspielregal-pwa-v5`
+- CSS-Grundstruktur / ausgeglichene Klammern
+- keine Python-/Docker-/SQLite-Dateien im Pages-Paket
+- keine Inline-Eventhandler oder serverseitigen Secrets
+- ZIP-Inhalt und ZIP-Integrität
 
-Diese Punkte benötigen die jeweilige Zielplattform bzw. echte Zugangsdaten und wurden nicht simuliert als „erfolgreich“ ausgewiesen.
+Nicht vollständig möglich in dieser Umgebung:
+
+- visueller Lauf auf echtem iPhone/Safari im Home-Screen-Modus
+- realer GitHub-Pages-/Cloudflare-Servermodus
+
+Diese Punkte sollten nach Deployment einmal auf dem Zielsystem geprüft werden.

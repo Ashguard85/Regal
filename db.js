@@ -1,5 +1,5 @@
 const DB_NAME = "brettspielregal-local";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function reqToPromise(req){return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 function txDone(tx){return new Promise((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("IndexedDB transaction aborted"));});}
@@ -9,7 +9,15 @@ export async function openDb(){
     const req=indexedDB.open(DB_NAME,DB_VERSION);
     req.onupgradeneeded=()=>{
       const db=req.result;
-      if(!db.objectStoreNames.contains("games")){const s=db.createObjectStore("games",{keyPath:"id"});s.createIndex("updated_at","updated_at");s.createIndex("title","title");}
+      let games;
+      if(!db.objectStoreNames.contains("games")){
+        games=db.createObjectStore("games",{keyPath:"id"});
+        games.createIndex("updated_at","updated_at");
+        games.createIndex("title","title");
+      }else{
+        games=req.transaction.objectStore("games");
+      }
+      if(!games.indexNames.contains("ean"))games.createIndex("ean","ean",{unique:false});
       if(!db.objectStoreNames.contains("settings"))db.createObjectStore("settings",{keyPath:"key"});
       if(!db.objectStoreNames.contains("secrets"))db.createObjectStore("secrets",{keyPath:"key"});
     };

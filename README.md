@@ -1,115 +1,97 @@
-# Brettspielregal – GitHub Pages PWA v1.0.0
+# Brettspielregal – GitHub Pages PWA v5.0.0
 
-Dieses Paket ist das **rein statische Zusatz-Frontend** für GitHub Pages. Es enthält kein Python, Flask, SQLite, Docker oder serverseitige Secrets. Release-Kompatibilität: **Pages v1.0.0 ↔ Docker v1.0.0**.
+Statischer Zusatz-Client für **Brettspielregal Docker v5.0.0**. Dieses Paket enthält kein Python, kein SQLite, kein Docker und keine serverseitigen Secrets.
 
 ## Betriebsmodi
 
 ### Lokal
 
-Alle Brettspiele liegen in IndexedDB auf diesem Gerät. Nach erfolgreichem ersten Laden/Cache-Befüllen ist die App-Shell offline nutzbar. Es gibt keine Backend-URL, kein Cloudflare-Token und keine Serverrequests. JSON-Backup/Restore funktioniert lokal.
+- alle Brettspiele in IndexedDB
+- vollständig ohne Docker-Backend nutzbar
+- App-Shell offline verfügbar
+- JSON-Backup/Restore lokal
+- **keine KI und kein Ollama-Zugriff**
 
 ### Server
 
-Die PWA verwendet die REST-API des Docker-Pakets über eine öffentliche HTTPS-URL, z. B. `https://api.example.com`. Daten liegen dann in der SQLite-Datenbank des Docker-Backends.
-
-Beim Moduswechsel wird **nur der aktive Datenspeicher gewechselt**. Es gibt keinen Fake-Sync. Die Aktionen „Lokale Daten auf Server übertragen“ und „Serverdaten lokal übernehmen“ sind bewusste Importvorgänge mit Vorschau und Auswahl zwischen Zusammenführen/Ersetzen.
-
-## Erststart
-
-Beim ersten Start fragt die PWA:
-
-- Auf diesem Gerät → lokaler Modus
-- Mit meinem Server → Server-Modus
-
-Der Modus kann später unter Setup geändert werden.
-
-## Server-Konfiguration
-
-Im Server-Modus werden lokal auf dem Gerät gespeichert:
-
-- Backend URL
-- Cloudflare Client ID
-- Cloudflare Client Secret
-
-Backend-URL liegt in IndexedDB `settings`, Service-Token-Werte in einem getrennten IndexedDB-Store `secrets`. Sie werden nie in JSON-Backups aufgenommen. Das Secret wird nach Speicherung nicht wieder vollständig angezeigt und kann ohne Neuinstallation gelöscht/ersetzt werden.
-
-Nur öffentliche `https://`-Backend-URLs sind vorgesehen.
-
-## Cloudflare Access / CORS
-
-Das Docker-Backend erwartet für Pages als Origin beispielsweise:
-
 ```text
-PWA_ALLOWED_ORIGIN=https://app.example.com
+GitHub Pages PWA
+    ↓ HTTPS
+Cloudflare Access
+    ↓
+Brettspielregal Flask API
+    ↓
+SQLite + optional internes Ollama
 ```
 
-Für Service Auth sendet die PWA im Server-Modus:
+Ollama wird niemals direkt vom Browser angesprochen. Seine interne URL bleibt dem Pages-Frontend unbekannt.
 
-```text
-CF-Access-Client-Id
-CF-Access-Client-Secret
+
+## Neu in v5
+
+- vollständig überarbeitete iPhone-first Oberfläche
+- neue Farbwelt, Sammlungskopf, Suche und Bottom Navigation
+- modernere Spielkarten mit Cover bzw. Initialen-Platzhalter
+- hervorgehobene Kerninfos und Auszeichnungen
+- überarbeitete Formulare, Dialoge, Setup-Bereiche und Offline-Seite
+- keine Änderung an IndexedDB, Server-Konfiguration oder gespeicherten Cloudflare-Tokens
+
+## v5 – Oberfläche und Ollama
+
+Wenn das verbundene Docker-Backend `AI_PROVIDER=ollama` verwendet, kann die Pages-PWA im Server-Modus „Daten aus Link vorschlagen“ genau wie das Docker-Frontend nutzen. Der Browser sendet nur die Produkt-URL an das Flask-Backend. Flask lädt die Seite sicher und übergibt den bereinigten Inhalt intern an Ollama.
+
+Im Setup zeigt die PWA den vom Backend gemeldeten KI-Anbieter und Modellnamen. Über „KI-Verbindung testen“ lässt sich prüfen, ob das Backend Ollama und das konfigurierte Modell erreicht. Die interne `OLLAMA_BASE_URL` wird nicht an Pages ausgegeben.
+
+## Server-Verbindung
+
+Im Setup hinterlegen:
+
+- öffentliche Backend-URL, z. B. `https://api.example.com`
+- optional `CF-Access-Client-Id`
+- optional `CF-Access-Client-Secret`
+
+Cloudflare-Zugangsdaten liegen nur in IndexedDB dieses Geräts. Sie werden nicht exportiert und nach dem Speichern nicht wieder vollständig angezeigt.
+
+## GitHub Pages Konfiguration
+
+`config.js` enthält nur öffentliche Frontend-Konfiguration. Niemals Secrets dort eintragen.
+
+Beispiel:
+
+```js
+window.APP_CONFIG = {
+  buildTarget: "pages",
+  version: "5.0.0",
+  defaultApiUrl: "https://api.example.com",
+  allowLocalMode: true,
+  allowedServerOrigins: ["https://api.example.com"]
+};
 ```
 
-Diese Custom Headers lösen im Browser einen CORS-Preflight aus. In Cloudflare Access muss deshalb für die API-Anwendung entweder `OPTIONS` zum Origin durchgelassen oder die Preflight-Antwort in Cloudflare konfiguriert werden. Der Origin selbst erlaubt weiterhin nur die exakt konfigurierte Pages-Origin.
+Eine leere `allowedServerOrigins`-Liste erlaubt dem Benutzer, eine beliebige HTTPS-Backend-Origin einzurichten. Für einen festen privaten Einsatz empfiehlt sich eine explizite Liste.
 
-Empfehlung: separates Service Token pro Gerät, kurze/angemessene Laufzeit, engste Access-Policy und einzelne Widerrufbarkeit. Ein Browser-PWA-Secret ist **kein** iOS-Keychain-Secret; JavaScript derselben Origin kann darauf zugreifen.
+## Daten / Backups
 
-## Content Security Policy
+Backup-Format bleibt `brettspielregal-backup` Version 2. v1- und v2-Backups bleiben importierbar. v5 ändert das fachliche Datenmodell nicht.
 
-Die mitgelieferte CSP verbietet fremde Scripts, Inline-Scripts, `eval`, Frames und Objekte. Weil die Backend-URL beim Erststart frei konfigurierbar sein kann, ist `connect-src` in v1 auf HTTPS-Verbindungen beschränkt (`https:`), nicht auf einen einzelnen Host.
+Ein Moduswechsel synchronisiert keine Daten. „Lokale Daten auf Server übertragen“ und „Serverdaten lokal übernehmen“ sind bewusste, bestätigte Transfers mit Vorschau.
 
-Wenn die Backend-Origin feststeht, ist eine weitere Härtung empfehlenswert: in `index.html` `connect-src 'self' https:` durch die konkrete Origin ersetzen, z. B. `connect-src 'self' https://api.example.com`.
+## PWA
 
-## IndexedDB
+- Service Worker `brettspielregal-pwa-v5`
+- IndexedDB Schema 2
+- kein automatischer Reload bei Service-Worker-Wechsel
+- CSP ohne Inline-Scripts/eval
+- iPhone Safe Areas und Bottom Navigation
 
-Datenbank: `brettspielregal-local`, Schema-Version 1.
+## Cloudflare / CORS
 
-Stores:
+Auf dem Docker-Backend muss `PWA_ALLOWED_ORIGIN` exakt auf die Pages-Origin zeigen. Cloudflare Access muss Browser-`OPTIONS`-Preflights für diese API-Konstellation ermöglichen.
 
-- `games` – lokale fachliche Datensätze
-- `settings` – kleine nicht-geheime PWA/Verbindungseinstellungen
-- `secrets` – Cloudflare-Zugangsdaten; nicht exportiert
+Der Pages-Lokalmodus sendet keine Cloudflare-Header und keine Serverrequests.
 
-Künftige Releases müssen die IndexedDB-Version erhöhen und bestehende Daten migrieren statt die DB zu löschen.
+## Kompatibilität
 
-## Backup / Restore
+**Pages v5.0.0 ↔ Docker v5.0.0**.
 
-Gemeinsames Format:
-
-```json
-{
-  "format": "brettspielregal-backup",
-  "version": 1,
-  "data": {"games": [], "settings": {}}
-}
-```
-
-Im lokalen Modus werden fachliche Daten exportiert. Cloudflare-Zugangsdaten und Server-Konfiguration sind ausdrücklich nicht Bestandteil des Backups.
-
-Beim Restore erscheint zuerst eine Vorschau. „Ersetzen“ löscht den Zielbestand, „Zusammenführen“ behält andere IDs und übernimmt importierte IDs. Beim Übernehmen von Serverdaten kann vor einem lokalen Ersetzen ein Sicherheitsbackup exportiert werden.
-
-## Link-/KI-Auswertung
-
-Die Auswertung externer Links ist absichtlich **nicht lokal im Pages-Browser** implementiert, weil dort kein KI-API-Key sicher hinterlegt werden soll. Sie erscheint nur im Server-Modus, wenn das Docker-Backend `AI_IMPORT_ENABLED=true` meldet. Der externe Abruf und ein optionaler OpenAI-Aufruf erfolgen dann serverseitig.
-
-## GitHub Pages Deployment
-
-Das Paket kann direkt in die Root eines Git-Repositories kopiert werden. Der Workflow `.github/workflows/pages.yml` lädt den Repository-Inhalt als Pages-Artefakt hoch. In GitHub unter **Settings → Pages → Source** GitHub Actions wählen.
-
-Es werden keine Secrets im Workflow benötigt.
-
-## iPhone / PWA
-
-Die Oberfläche ist auf Hochformat, Safe Areas, Bottom Navigation und Touch-Ziele ausgelegt. Manifest, Apple Touch Icon, 192/512/Maskable Icons sowie Offline-Fallback sind enthalten. Zum Installieren in Safari: Teilen → „Zum Home-Bildschirm“.
-
-## Service Worker
-
-Cache-Version v1: `brettspielregal-pwa-v1`. Es gibt keine erzwungene Reload-Schleife bei `controllerchange`. Bei einer Frontend-Änderung muss die Cache-Version erhöht werden.
-
-## Bekannte Einschränkungen v1
-
-- keine automatische Synchronisation
-- kein Offline-Schreiben im Server-Modus
-- bei gelöschten Browser-/PWA-Daten gehen lokale IndexedDB-Daten verloren
-- Service Token im Browser bietet nicht die Schutzstufe nativer Secure Storage
-- frei konfigurierbare Backend-URL erfordert für CSP `connect-src https:`; bei fixer Origin sollte die CSP enger gesetzt werden
+Beim Update von Pages v3 auf v5 bleiben IndexedDB-Daten, gespeicherte Backend-URL und gespeicherte Cloudflare-Service-Tokens erhalten.
